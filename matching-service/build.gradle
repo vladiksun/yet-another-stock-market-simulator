@@ -1,0 +1,31 @@
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
+//ext {
+//    set('springCloudVersion', "${springCloudVersionGlobal}")
+//}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+//    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    compile 'com.typesafe.akka:akka-actor-typed_2.13:2.6.10'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+    testCompile 'com.typesafe.akka:akka-actor-testkit-typed_2.13:2.6.10'
+
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+//        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+}
+
+//dependencyManagement {
+//    imports {
+//        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+//    }
+//}
+
+
