@@ -1,10 +1,12 @@
 package com.vb.market.engine.booking;
 
+import com.vb.market.domain.Order;
 import com.vb.market.domain.Side;
+import com.vb.market.engine.MatchingManager.OrderReply;
+import com.vb.market.utils.IdGen;
 
-import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.time.Instant;
+import java.util.*;
 
 /***
  *         Books must sort data according to Price/Time priority (FIFO)
@@ -72,36 +74,106 @@ import java.util.TreeMap;
 
 public class OrderBook {
 
-    private Map<KeyPriority, BookEntry> limitBook;
+    private NavigableMap<KeyPriority, BookEntry> limitBook;
+
+    private Side side;
+
+    private IdGen idGen;
+
+    private Comparator<KeyPriority> comparator;
 
     public OrderBook(Side side) {
-        limitBook = new TreeMap<>(PriceComparator.of(side)
-                                    .thenComparing(new EarliestSubmittedTimeFirst()));
+        this.side = side;
+        this.idGen = new IdGen();
+        this.comparator = PriceComparator.of(side)
+                                            .thenComparing(new EarliestSubmittedTimeFirst())
+                                            .thenComparing(new EarliestEventFirst());
+        this.limitBook = new TreeMap<>(comparator);
     }
 
-    static class KeyPriority {
+    public OrderReply addOrder(Order request) {
+        request.setEventId(idGen.getID());
+        Instant submissionTime = Instant.now();
+        KeyPriority keyPriority = new KeyPriority(request.getEventId(), request.getPrice(), submissionTime);
+        BookEntry bookEntry = new BookEntry(keyPriority, side, request.getQuantity());
+        limitBook.put(keyPriority, bookEntry);
 
-        private Price price;
-        private Long submittedTime;
+        return new OrderReply(request, submissionTime);
+    }
 
-        public KeyPriority(Price price, Long submittedTime) {
+    public Map<KeyPriority, BookEntry> getBookEntries(int limit) {
+        Map<KeyPriority, BookEntry> collect = limitBook.entrySet().stream()
+                .limit(limit)
+                .collect(() -> new TreeMap<>(comparator),
+                        (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
+        return collect;
+    }
+
+    public static class KeyPriority {
+        private Long eventId;
+        private Integer price;
+        private Instant submittedTime;
+
+        public KeyPriority(Long eventId, Integer price, Instant submittedTime) {
+            this.eventId = eventId;
             this.price = price;
             this.submittedTime = submittedTime;
         }
 
-        public Price getPrice() {
+        public Integer getPrice() {
             return price;
         }
 
-        public Long getSubmittedTime() {
+        public Instant getSubmittedTime() {
             return submittedTime;
+        }
+
+        public Long getEventId() {
+            return eventId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            KeyPriority that = (KeyPriority) o;
+            return eventId.equals(that.eventId) &&
+                    price.equals(that.price) &&
+                    submittedTime.equals(that.submittedTime);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(eventId, price, submittedTime);
         }
     }
 
-    static class BookEntry {
+    public static class BookEntry {
         private KeyPriority key;
         private Side side;
         private Integer quantity;
+
+        public BookEntry(KeyPriority key, Side side, Integer quantity) {
+            this.key = key;
+            this.side = side;
+            this.quantity = quantity;
+        }
+
+        public KeyPriority getKey() {
+            return key;
+        }
+
+        public Side getSide() {
+            return side;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
     }
 
     static class PriceComparator implements Comparator<KeyPriority> {
@@ -129,5 +201,12 @@ public class OrderBook {
         }
     }
 
+    static class EarliestEventFirst implements Comparator<KeyPriority> {
+
+        @Override
+        public int compare(KeyPriority o1, KeyPriority o2) {
+            return o1.getEventId().compareTo(o2.getEventId());
+        }
+    }
 
 }

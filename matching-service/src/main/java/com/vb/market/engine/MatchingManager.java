@@ -5,28 +5,41 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
 import akka.actor.typed.javadsl.*;
 import akka.pattern.StatusReply;
-import com.vb.market.domain.OrderRequest;
+import com.vb.market.domain.Order;
+import com.vb.market.engine.MatchingManager.Command;
 import com.vb.market.engine.booking.Books;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MatchingManager extends AbstractBehavior<MatchingManager.Command> {
+public class MatchingManager extends AbstractBehavior<Command> {
 
     public interface Command {}
 
-    public static final class PlaceOrderMessage implements MatchingManager.Command, Books.Command {
-        public final OrderRequest orderRequest;
-        public final ActorRef<StatusReply<Reply>> replyTo;
+    // protocol start
+    public static final class PlaceOrderMessage implements Command, Books.Command {
+        public final Order order;
+        public final ActorRef<StatusReply<OrderReply>> replyTo;
 
-        public PlaceOrderMessage(OrderRequest orderRequest, ActorRef<StatusReply<Reply>> replyTo) {
-            this.orderRequest = orderRequest;
+        public PlaceOrderMessage(Order order, ActorRef<StatusReply<OrderReply>> replyTo) {
+            this.order = order;
             this.replyTo = replyTo;
         }
     }
 
-    private static class BooksActorTerminatedMessage implements MatchingManager.Command {
+    public static final class OrderReply {
+        public final Order order;
+        public final Instant submittedTime;
+
+        public OrderReply(Order order, Instant submittedTime) {
+            this.order = order;
+            this.submittedTime = submittedTime;
+        }
+    }
+
+    private static class BooksActorTerminatedMessage implements Command {
         public final String bookId;
 
         BooksActorTerminatedMessage(String bookId) {
@@ -34,15 +47,11 @@ public class MatchingManager extends AbstractBehavior<MatchingManager.Command> {
         }
     }
 
-    public enum BalanceBooksCommand implements MatchingManager.Command {
+    public enum BalanceBooksCommand implements Command, Books.Command {
         INSTANCE
     }
+    // protocol end
 
-    interface Reply {}
-
-    public enum OrderPlaced implements MatchingManager.Reply {
-        INSTANCE
-    }
 
     private final Map<String, ActorRef<Books.Command>> bookIdToActor = new HashMap<>();
 
@@ -59,26 +68,30 @@ public class MatchingManager extends AbstractBehavior<MatchingManager.Command> {
         context.getLog().info("MatchingManager started");
     }
 
-    private MatchingManager onPlaceOrderMessage(PlaceOrderMessage placeOrderMessage) {
-        String bookId = placeOrderMessage.orderRequest.getSymbol();
+    private Behavior<MatchingManager.Command> onPlaceOrderMessage(PlaceOrderMessage placeOrderMessage) {
+        String bookId = placeOrderMessage.order.getSymbol();
         ActorRef<Books.Command> bookActorRef = bookIdToActor.get(bookId);
 
         if (bookActorRef != null) {
             bookActorRef.tell(placeOrderMessage);
         } else {
             getContext().getLog().info("Creating booking actor for symbol {}", bookId);
-            ActorRef<Books.Command> booksActor = getContext().spawn(Books.create(), "book-" + bookId);
-            getContext().watchWith(booksActor, new BooksActorTerminatedMessage(bookId));
+            bookActorRef = getContext().spawn(Books.create(bookId), "book-" + bookId);
+            getContext().watchWith(bookActorRef, new BooksActorTerminatedMessage(bookId));
 
+            bookIdToActor.put(bookId, bookActorRef);
             bookActorRef.tell(placeOrderMessage);
-            bookIdToActor.put(bookId, booksActor);
         }
         return this;
     }
 
     private MatchingManager onBalanceBooksCommand(BalanceBooksCommand balanceBooksCommand) {
-        //TODO:@vlbo - trigger books balancing
         getContext().getLog().info("Time to balance books....");
+
+        bookIdToActor.forEach((bookId, bookActorRef) -> {
+            bookActorRef.tell(balanceBooksCommand);
+        });
+
         return this;
     }
 
