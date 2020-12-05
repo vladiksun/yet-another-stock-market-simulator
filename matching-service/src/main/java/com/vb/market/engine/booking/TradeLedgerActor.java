@@ -51,7 +51,7 @@ public class TradeLedgerActor extends AbstractBehavior<TradeLedgerActor.Command>
         ledger.put(id, message.trade);
 
         //TODO:@vlbo - websocket
-        getContext().getLog().info(String.format("Trade transaction complete %s", trade.toString()));
+        getContext().getLog().info(String.format("TRADE transaction complete %s", trade.toString()));
         return this;
     }
 }
