@@ -1,15 +1,27 @@
 package com.vb.market.domain;
 
+import javax.validation.constraints.NotNull;
 import java.time.Instant;
 
 public class PlaceOrderRequest {
 
+    @NotNull
     private String clientId;
+
     private Long eventId;
+
+    @NotNull
     private String symbol;
+
+    @NotNull
     private Integer price;
+
+    @NotNull
     private Integer quantity;
+
+    @NotNull
     private Side side;
+
     private Instant submittedTime;
 
     public String getClientId() {
@@ -66,6 +78,19 @@ public class PlaceOrderRequest {
 
     public void setSubmittedTime(Instant submittedTime) {
         this.submittedTime = submittedTime;
+    }
+
+    @Override
+    public String toString() {
+        return "PlaceOrderRequest{" +
+                "clientId='" + clientId + '\'' +
+                ", eventId=" + eventId +
+                ", symbol='" + symbol + '\'' +
+                ", price=" + price +
+                ", quantity=" + quantity +
+                ", side=" + side +
+                ", submittedTime=" + submittedTime +
+                '}';
     }
 
     public static final class Builder {

@@ -193,7 +193,7 @@ public class BooksActor extends AbstractBehavior<BooksActor.Command> {
         }
 
         placeOrderMessage.replyTo.tell(StatusReply.success(placeOrderReply));
-        getContext().getLog().info("Order ID={} SYMBOL={} has been placed", placeOrderRequest.getEventId(), bookId);
+        getContext().getLog().info("Order placed: {}", placeOrderRequest.toString());
         return this;
     }
 

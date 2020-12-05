@@ -1,7 +1,6 @@
 
 {
-  "clientId": "1111",
-  "orderId": "aaa",
+  "clientId": "Vlad",
   "symbol": "AAA",
   "price": 20,
   "quantity": 100,

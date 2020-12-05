@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.concurrent.CompletionStage;
 
 @RestController
@@ -30,7 +31,7 @@ public class MarketController {
     @PostMapping(path = "/placeorder",
             consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE})
-    public CompletionStage<ResponseEntity<PlaceOrderResponse>> placeOrder(@RequestBody PlaceOrderRequest placeOrderRequest) {
+    public CompletionStage<ResponseEntity<PlaceOrderResponse>> placeOrder(@Valid @RequestBody PlaceOrderRequest placeOrderRequest) {
         return marketService.placeOrder(placeOrderRequest).handle((orderPlaced, throwable) -> {
             PlaceOrderResponse.Builder builder = PlaceOrderResponse.Builder.anOrderOperationStatus()
                     .withRequestedOrder(placeOrderRequest);
@@ -53,7 +54,7 @@ public class MarketController {
     @PostMapping(path = "/cancelorder",
             consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE})
-    public CompletionStage<ResponseEntity<CancelOrderResponse>> cancelOrder(@RequestBody CancelOrderRequest cancelOrderRequest) {
+    public CompletionStage<ResponseEntity<CancelOrderResponse>> cancelOrder(@Valid @RequestBody CancelOrderRequest cancelOrderRequest) {
         return marketService.cancelOrder(cancelOrderRequest).handle((orderCanceled, throwable) -> {
             CancelOrderResponse.Builder builder = CancelOrderResponse.Builder.aCancelOrderResponse()
                     .withCancelOrderRequest(cancelOrderRequest);

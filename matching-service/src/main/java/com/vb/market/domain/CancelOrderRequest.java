@@ -1,13 +1,19 @@
 package com.vb.market.domain;
 
+import javax.validation.constraints.NotNull;
+
 public class CancelOrderRequest {
 
+    @NotNull
     private String clientId;
 
+    @NotNull
     private Long eventId;
 
+    @NotNull
     private String symbol;
 
+    @NotNull
     private Side side;
 
     public String getClientId() {

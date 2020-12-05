@@ -1,0 +1,38 @@
+config:
+  target: "http://localhost:8080/market"
+  phases:
+    - duration: 300
+      arrivalRate: 5
+      name: Warm up
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 50
+      name: Ramp up load
+    - duration: 600
+      arrivalRate: 50
+      name: Sustained load
+  payload:
+    # Load search keywords from an external CSV file and make them available
+    # to virtual user scenarios as variable "keywords":
+    path: "./loadData.csv"
+    fields:
+      - "clientId"
+      - "symbol"
+      - "price"
+      - "quantity"
+      - "side"
+  defaults:
+    headers:
+      Accept: "application/json"
+scenarios:
+  # We define one scenario:
+  - name: "Search and buy"
+    flow:
+      - post:
+          url: "/placeorder"
+          json:
+            clientId: "{{ clientId }}"
+            symbol: "{{ symbol }}"
+            price: "{{ price }}"
+            quantity: "{{ quantity }}"
+            side: "{{ side }}"

@@ -10,7 +10,6 @@ import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.engine.MatchingManagerActor.Command;
 import com.vb.market.engine.booking.BooksActor;
 import com.vb.market.engine.booking.TradeLedgerActor;
-import com.vb.market.exceptions.ApplicationCause;
 import com.vb.market.exceptions.ApplicationException;
 import com.vb.market.exceptions.CommonCause;
 
@@ -87,8 +86,8 @@ public class MatchingManagerActor extends AbstractBehavior<Command> {
 
         this.ledgerActor = getContext().spawn(TradeLedgerActor.create(), "akka-ledger");
 
-        //timers.startTimerWithFixedDelay(BalanceBooksCommand.INSTANCE, Duration.ofMinutes(1));
-        timers.startTimerWithFixedDelay(BalanceBooksCommand.INSTANCE, Duration.ofSeconds(5));
+        timers.startTimerWithFixedDelay(BalanceBooksCommand.INSTANCE, Duration.ofMinutes(1));
+//        timers.startTimerWithFixedDelay(BalanceBooksCommand.INSTANCE, Duration.ofSeconds(5));
 
         context.getLog().info("MatchingManager started");
     }
