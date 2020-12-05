@@ -7,8 +7,8 @@ import java.io.IOException;
 public class EngineMain {
 
     public static void main(String[] args) {
-        ActorSystem<MatchingManager.Command> commandActorSystem =
-                ActorSystem.create(MatchingManager.create(), "stock-market-system");
+        ActorSystem<MatchingManagerActor.Command> commandActorSystem =
+                ActorSystem.create(MatchingManagerActor.create(), "stock-market-system");
 
         try {
             System.out.println(">>> Press ENTER to exit <<<");

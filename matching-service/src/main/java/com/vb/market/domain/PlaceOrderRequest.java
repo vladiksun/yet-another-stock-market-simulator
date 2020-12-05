@@ -1,6 +1,8 @@
 package com.vb.market.domain;
 
-public class Order {
+import java.time.Instant;
+
+public class PlaceOrderRequest {
 
     private String clientId;
     private Long eventId;
@@ -8,6 +10,7 @@ public class Order {
     private Integer price;
     private Integer quantity;
     private Side side;
+    private Instant submittedTime;
 
     public String getClientId() {
         return clientId;
@@ -57,6 +60,13 @@ public class Order {
         this.quantity = quantity;
     }
 
+    public Instant getSubmittedTime() {
+        return submittedTime;
+    }
+
+    public void setSubmittedTime(Instant submittedTime) {
+        this.submittedTime = submittedTime;
+    }
 
     public static final class Builder {
         private String clientId;
@@ -78,7 +88,7 @@ public class Order {
             return this;
         }
 
-        public Builder withOrderId(Long orderId) {
+        public Builder withEventId(Long orderId) {
             this.eventId = orderId;
             return this;
         }
@@ -104,18 +114,18 @@ public class Order {
         }
 
         public Builder but() {
-            return anOrderRequest().withClientId(clientId).withOrderId(eventId).withSymbol(symbol).withPrice(price).withQuantity(quantity).withSide(side);
+            return anOrderRequest().withClientId(clientId).withEventId(eventId).withSymbol(symbol).withPrice(price).withQuantity(quantity).withSide(side);
         }
 
-        public Order build() {
-            Order order = new Order();
-            order.setClientId(clientId);
-            order.setEventId(eventId);
-            order.setSymbol(symbol);
-            order.setPrice(price);
-            order.setQuantity(quantity);
-            order.setSide(side);
-            return order;
+        public PlaceOrderRequest build() {
+            PlaceOrderRequest placeOrderRequest = new PlaceOrderRequest();
+            placeOrderRequest.setClientId(clientId);
+            placeOrderRequest.setEventId(eventId);
+            placeOrderRequest.setSymbol(symbol);
+            placeOrderRequest.setPrice(price);
+            placeOrderRequest.setQuantity(quantity);
+            placeOrderRequest.setSide(side);
+            return placeOrderRequest;
         }
     }
 }

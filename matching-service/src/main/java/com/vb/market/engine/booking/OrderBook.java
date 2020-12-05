@@ -1,9 +1,10 @@
 package com.vb.market.engine.booking;
 
-import com.vb.market.domain.Order;
+import com.vb.market.domain.CancelOrderRequest;
+import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.Side;
-import com.vb.market.engine.MatchingManager.OrderReply;
-import com.vb.market.utils.IdGen;
+import com.vb.market.engine.MatchingManagerActor.CancelOrderReply;
+import com.vb.market.engine.MatchingManagerActor.PlaceOrderReply;
 
 import java.time.Instant;
 import java.util.*;
@@ -22,16 +23,6 @@ import java.util.*;
  *         they are sorted by their arrival time at the exchange
  *
  *         Input:
- *         Id   Side    Time   Qty   Price   Qty    Time   Side
- *         ---+------+-------+-----+-------+-----+-------+------
- *         #3                        23     200   09:05   SELL
- *         #1                        23     100   09:01   SELL
- *         #2                        22     100   09:03   SELL
- *         #5   BUY    09:08   200   21
- *         #4   BUY    09:06   100   20
- *         #6   BUY    09:09   200   20
- *
- *         New order comes: BUY 250 shares @ 24 ---> leads to result
  *         Id   Side    Time   Qty   Price   Qty    Time   Side
  *         ---+------+-------+-----+-------+-----+-------+------
  *         #3                        23     200   09:05   SELL
@@ -78,27 +69,38 @@ public class OrderBook {
 
     private Side side;
 
-    private IdGen idGen;
-
     private Comparator<KeyPriority> comparator;
 
     public OrderBook(Side side) {
         this.side = side;
-        this.idGen = new IdGen();
         this.comparator = PriceComparator.of(side)
                                             .thenComparing(new EarliestSubmittedTimeFirst())
                                             .thenComparing(new EarliestEventFirst());
         this.limitBook = new TreeMap<>(comparator);
     }
 
-    public OrderReply addOrder(Order request) {
-        request.setEventId(idGen.getID());
-        Instant submissionTime = Instant.now();
-        KeyPriority keyPriority = new KeyPriority(request.getEventId(), request.getPrice(), submissionTime);
+    public PlaceOrderReply addOrder(PlaceOrderRequest request) {
+        KeyPriority keyPriority = new KeyPriority(request.getEventId(), request.getPrice(), request.getSubmittedTime());
         BookEntry bookEntry = new BookEntry(keyPriority, side, request.getQuantity());
         limitBook.put(keyPriority, bookEntry);
 
-        return new OrderReply(request, submissionTime);
+        return new PlaceOrderReply(request);
+    }
+
+    public Optional<CancelOrderReply> cancelOrder(CancelOrderRequest cancelOrderRequest) {
+        Long eventId = cancelOrderRequest.getEventId();
+
+        Optional<KeyPriority> first = limitBook.keySet().stream()
+                .filter(keyPriority -> keyPriority.eventId.equals(eventId))
+                .findFirst();
+
+        if (first.isPresent()) {
+            KeyPriority keyPriority = first.get();
+            limitBook.remove(keyPriority);
+            return Optional.of(new CancelOrderReply(cancelOrderRequest));
+        } else {
+            return Optional.empty();
+        }
     }
 
     public Map<KeyPriority, BookEntry> getBookEntries(int limit) {
@@ -108,6 +110,12 @@ public class OrderBook {
                         (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
         return collect;
     }
+
+    public Map<KeyPriority, BookEntry> getBookEntries() {
+        return limitBook;
+    }
+
+
 
     public static class KeyPriority {
         private Long eventId;
@@ -130,6 +138,15 @@ public class OrderBook {
 
         public Long getEventId() {
             return eventId;
+        }
+
+        @Override
+        public String toString() {
+            return "KeyPriority{" +
+                    "eventId=" + eventId +
+                    ", price=" + price +
+                    ", submittedTime=" + submittedTime +
+                    '}';
         }
 
         @Override
@@ -163,6 +180,10 @@ public class OrderBook {
             this.quantity = quantity;
         }
 
+        public boolean isFullyFilled() {
+            return quantity == 0;
+        }
+
         public KeyPriority getKey() {
             return key;
         }
@@ -173,6 +194,18 @@ public class OrderBook {
 
         public Integer getQuantity() {
             return quantity;
+        }
+
+        public void setKey(KeyPriority key) {
+            this.key = key;
+        }
+
+        public void setSide(Side side) {
+            this.side = side;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
         }
     }
 

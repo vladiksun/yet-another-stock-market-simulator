@@ -1,12 +1,14 @@
 package com.vb.market.service;
 
-import com.vb.market.domain.Order;
-import com.vb.market.engine.MatchingManager;
+import com.vb.market.domain.CancelOrderRequest;
+import com.vb.market.domain.PlaceOrderRequest;
+import com.vb.market.engine.MatchingManagerActor;
 
 import java.util.concurrent.CompletionStage;
 
 public interface MarketService {
 
-    CompletionStage<MatchingManager.OrderReply> placeOrder(Order order);
+    CompletionStage<MatchingManagerActor.PlaceOrderReply> placeOrder(PlaceOrderRequest placeOrderRequest);
 
+    CompletionStage<MatchingManagerActor.CancelOrderReply> cancelOrder(CancelOrderRequest cancelOrderRequest);
 }

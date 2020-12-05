@@ -1,7 +1,7 @@
 package com.vb.market;
 
 import akka.actor.typed.ActorSystem;
-import com.vb.market.engine.MatchingManager;
+import com.vb.market.engine.MatchingManagerActor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Bean;
 public class YetAnotherStockMarketSimulatorApplication {
 
 	@Bean
-	public ActorSystem<MatchingManager.Command> akkaSupervisorActor() {
-		return ActorSystem.create(MatchingManager.create(), "stock-market-system");
+	public ActorSystem<MatchingManagerActor.Command> akkaSupervisorActor() {
+		return ActorSystem.create(MatchingManagerActor.create(), "stock-market-system");
 	}
 
 	public static void main(String[] args) {
