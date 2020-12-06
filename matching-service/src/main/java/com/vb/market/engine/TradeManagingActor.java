@@ -8,7 +8,7 @@ import akka.pattern.StatusReply;
 import com.vb.market.domain.CancelOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.engine.TradeManagingActor.Command;
-import com.vb.market.engine.booking.BookingActor;
+import com.vb.market.engine.booking.BookKeepingActor;
 import com.vb.market.engine.booking.TradeLedgerActor;
 import com.vb.market.exceptions.ApplicationException;
 import com.vb.market.exceptions.CommonCause;
@@ -22,7 +22,7 @@ public class TradeManagingActor extends AbstractBehavior<Command> {
     public interface Command {}
 
     // protocol start
-    public static final class PlaceOrderMessage implements Command, BookingActor.Command {
+    public static final class PlaceOrderMessage implements Command, BookKeepingActor.Command {
         public final PlaceOrderRequest placeOrderRequest;
         public final ActorRef<StatusReply<OrderPlacedReply>> replyTo;
 
@@ -40,7 +40,7 @@ public class TradeManagingActor extends AbstractBehavior<Command> {
         }
     }
 
-    public static final class CancelOrderMessage implements Command, BookingActor.Command {
+    public static final class CancelOrderMessage implements Command, BookKeepingActor.Command {
         public final CancelOrderRequest cancelOrderRequest;
         public final ActorRef<StatusReply<CancelOrderReply>> replyTo;
 
@@ -66,13 +66,13 @@ public class TradeManagingActor extends AbstractBehavior<Command> {
         }
     }
 
-    public enum BalanceBooksCommand implements Command, BookingActor.Command {
+    public enum BalanceBooksCommand implements Command, BookKeepingActor.Command {
         INSTANCE
     }
     // protocol end
 
 
-    private final Map<String, ActorRef<BookingActor.Command>> bookIdToActor = new HashMap<>();
+    private final Map<String, ActorRef<BookKeepingActor.Command>> bookIdToActor = new HashMap<>();
 
     private ActorRef<TradeLedgerActor.Command> ledgerActor;
 
@@ -94,13 +94,13 @@ public class TradeManagingActor extends AbstractBehavior<Command> {
 
     private Behavior<Command> onPlaceOrderMessage(PlaceOrderMessage placeOrderMessage) {
         String bookId = placeOrderMessage.placeOrderRequest.getSymbol();
-        ActorRef<BookingActor.Command> bookActorRef = bookIdToActor.get(bookId);
+        ActorRef<BookKeepingActor.Command> bookActorRef = bookIdToActor.get(bookId);
 
         if (bookActorRef != null) {
             bookActorRef.tell(placeOrderMessage);
         } else {
             getContext().getLog().info("Creating booking actor for symbol {}", bookId);
-            bookActorRef = getContext().spawn(BookingActor.create(bookId, ledgerActor), "akka-book-" + bookId);
+            bookActorRef = getContext().spawn(BookKeepingActor.create(bookId, ledgerActor), "akka-book-" + bookId);
             getContext().watchWith(bookActorRef, new BooksActorTerminatedMessage(bookId));
 
             bookIdToActor.put(bookId, bookActorRef);
@@ -111,7 +111,7 @@ public class TradeManagingActor extends AbstractBehavior<Command> {
 
     private Behavior<Command> onCancelOrderCommand(CancelOrderMessage cancelCommand) {
         String bookId = cancelCommand.cancelOrderRequest.getSymbol();
-        ActorRef<BookingActor.Command> bookActor = bookIdToActor.get(bookId);
+        ActorRef<BookKeepingActor.Command> bookActor = bookIdToActor.get(bookId);
 
         if (bookActor != null) {
             bookActor.tell(cancelCommand);

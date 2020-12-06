@@ -5,18 +5,23 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.pattern.StatusReply;
+import com.vb.market.YetAnotherStockMarketSimulatorApplication;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest.Builder;
 import com.vb.market.domain.Side;
 import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
 import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
-import com.vb.market.engine.booking.BookingActor;
-import com.vb.market.engine.booking.BookingActor.GetBookEntriesMessage;
+import com.vb.market.engine.booking.BookKeepingActor;
+import com.vb.market.engine.booking.BookKeepingActor.GetBookEntriesMessage;
 import com.vb.market.engine.booking.OrderBook;
 import com.vb.market.engine.booking.TradeLedgerActor;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +30,11 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        classes = YetAnotherStockMarketSimulatorApplication.class)
+@AutoConfigureMockMvc
 public class BookingTest {
 
     @ClassRule
@@ -36,10 +46,10 @@ public class BookingTest {
     @Test
     public void testPriceTimePrioritySortingForBUY() {
         TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
-        TestProbe<BookingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
+        TestProbe<BookKeepingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
 
         ActorRef<TradeLedgerActor.Command> ledger = testKit.spawn(TradeLedgerActor.create(), "akka-ledger");
-        ActorRef<BookingActor.Command> booksActor = testKit.spawn(BookingActor.create("TEST", ledger));
+        ActorRef<BookKeepingActor.Command> booksActor = testKit.spawn(BookKeepingActor.create("TEST", ledger));
 
         PlaceOrderRequest placeOrderRequest1 = Builder.anOrderRequest()
                 .withPrice(20)
@@ -72,7 +82,7 @@ public class BookingTest {
         booksActor.tell(new PlaceOrderMessage(placeOrderRequest5, testProbe.getRef()));
 
         booksActor.tell(new GetBookEntriesMessage(5, Side.BUY, testProbeN.getRef()));
-        BookingActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
+        BookKeepingActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
 
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> bookEntries = bookEntriesReply.bookEntries;
 
@@ -90,10 +100,10 @@ public class BookingTest {
     @Test
     public void testPriceTimePrioritySortingForSELL() {
         TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
-        TestProbe<BookingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
+        TestProbe<BookKeepingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
 
         ActorRef<TradeLedgerActor.Command> ledger = testKit.spawn(TradeLedgerActor.create(), "akka-ledger");
-        ActorRef<BookingActor.Command> booksActor = testKit.spawn(BookingActor.create("TEST", ledger));
+        ActorRef<BookKeepingActor.Command> booksActor = testKit.spawn(BookKeepingActor.create("TEST", ledger));
 
         PlaceOrderRequest placeOrderRequest1 = Builder.anOrderRequest()
                 .withPrice(22)
@@ -131,7 +141,7 @@ public class BookingTest {
         booksActor.tell(new PlaceOrderMessage(placeOrderRequest5, testProbe.getRef()));
 
         booksActor.tell(new GetBookEntriesMessage(5, Side.SELL, testProbeN.getRef()));
-        BookingActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
+        BookKeepingActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
 
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> bookEntries = bookEntriesReply.bookEntries;
 

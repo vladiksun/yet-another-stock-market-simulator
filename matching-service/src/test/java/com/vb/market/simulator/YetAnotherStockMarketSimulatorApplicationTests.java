@@ -35,8 +35,6 @@ class YetAnotherStockMarketSimulatorApplicationTests {
 		ResponseEntity<PlaceOrderResponse> responseEntity =
 				this.restTemplate.postForEntity(placeOrderUrl, placeOrderRequest, PlaceOrderResponse.class);
 
-		String test = "";
-
 	}
 
 }

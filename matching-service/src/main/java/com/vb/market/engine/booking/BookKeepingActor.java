@@ -10,12 +10,7 @@ import akka.pattern.StatusReply;
 import com.vb.market.AppContext;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.Side;
-import com.vb.market.engine.TradeManagingActor;
-import com.vb.market.engine.TradeManagingActor.BalanceBooksCommand;
-import com.vb.market.engine.TradeManagingActor.CancelOrderMessage;
-import com.vb.market.engine.TradeManagingActor.CancelOrderReply;
-import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
-import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
+import com.vb.market.engine.TradeManagingActor.*;
 import com.vb.market.engine.booking.OrderBook.BookEntry;
 import com.vb.market.engine.booking.OrderBook.KeyPriority;
 import com.vb.market.events.BookBalanceEvent;
@@ -25,14 +20,13 @@ import com.vb.market.exceptions.ApplicationException;
 import com.vb.market.exceptions.CommonCause;
 import com.vb.market.listeners.AppEventPublisher;
 import com.vb.market.utils.IdGen;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
 
-public class BookingActor extends AbstractBehavior<BookingActor.Command> {
+public class BookKeepingActor extends AbstractBehavior<BookKeepingActor.Command> {
 
     public interface Command {}
 
@@ -69,10 +63,10 @@ public class BookingActor extends AbstractBehavior<BookingActor.Command> {
     private AppEventPublisher eventPublisher;
 
     public static Behavior<Command> create(String bookId, ActorRef<TradeLedgerActor.Command> ledgerActor) {
-        return Behaviors.setup(context -> new BookingActor(context, bookId, ledgerActor));
+        return Behaviors.setup(context -> new BookKeepingActor(context, bookId, ledgerActor));
     }
 
-    private BookingActor(ActorContext<Command> context, String bookId, ActorRef<TradeLedgerActor.Command> ledgerActor) {
+    private BookKeepingActor(ActorContext<Command> context, String bookId, ActorRef<TradeLedgerActor.Command> ledgerActor) {
         super(context);
         this.eventPublisher = AppContext.getBean(AppEventPublisher.class);
         this.ledgerActor = ledgerActor;

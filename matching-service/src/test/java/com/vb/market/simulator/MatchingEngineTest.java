@@ -5,6 +5,7 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.pattern.StatusReply;
+import com.vb.market.YetAnotherStockMarketSimulatorApplication;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest.Builder;
 import com.vb.market.domain.Side;
@@ -14,10 +15,19 @@ import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        classes = YetAnotherStockMarketSimulatorApplication.class)
+@AutoConfigureMockMvc
 public class MatchingEngineTest {
 
     @ClassRule
