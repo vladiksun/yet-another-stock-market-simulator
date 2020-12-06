@@ -87,7 +87,7 @@ Base URL: **http://localhost:8080/market-websocket** <br/>
 Application replies to the provided Subscription URL based on user's session ID.
 
 Example using Apic Google Chrome extension:<br/>
-#####Place order<br/>
+##### Place order<br/>
 ![system aktor design](./docs/webSocketPlaceOrderExample.jpg)
 <br/>
 <br/>
