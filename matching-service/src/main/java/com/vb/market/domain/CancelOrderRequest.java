@@ -47,4 +47,14 @@ public class CancelOrderRequest {
     public void setSide(Side side) {
         this.side = side;
     }
+
+    @Override
+    public String toString() {
+        return "CancelOrderRequest{" +
+                "clientId='" + clientId + '\'' +
+                ", eventId=" + eventId +
+                ", symbol='" + symbol + '\'' +
+                ", side=" + side +
+                '}';
+    }
 }

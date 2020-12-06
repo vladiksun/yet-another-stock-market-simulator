@@ -18,6 +18,8 @@ import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
 import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
 import com.vb.market.engine.booking.OrderBook.BookEntry;
 import com.vb.market.engine.booking.OrderBook.KeyPriority;
+import com.vb.market.events.BookBalanceEvent;
+import com.vb.market.events.OrderCanceledEvent;
 import com.vb.market.events.OrderPlacedEvent;
 import com.vb.market.exceptions.ApplicationException;
 import com.vb.market.exceptions.CommonCause;
@@ -84,7 +86,7 @@ public class BookingActor extends AbstractBehavior<BookingActor.Command> {
     public Receive<Command> createReceive() {
         return newReceiveBuilder()
                 .onMessage(PlaceOrderMessage.class, this::onPlaceOrder)
-                .onMessage(TradeManagingActor.CancelOrderMessage.class, this::onCancelOrderCommand)
+                .onMessage(CancelOrderMessage.class, this::onCancelOrderCommand)
                 .onMessage(BalanceBooksCommand.class, this::onBookBalanceCommand)
                 .onMessage(GetBookEntriesMessage.class, this::getBookEntries)
                 .build();
@@ -106,6 +108,7 @@ public class BookingActor extends AbstractBehavior<BookingActor.Command> {
 
     private Behavior<Command> onBookBalanceCommand(BalanceBooksCommand balanceBooksCommand) {
         balanceBooksRecursively();
+        eventPublisher.publishEvent(new BookBalanceEvent(this));
         return this;
     }
 
@@ -219,6 +222,7 @@ public class BookingActor extends AbstractBehavior<BookingActor.Command> {
 
         if (successOrFail.isPresent()) {
             cancelCommand.replyTo.tell(StatusReply.success(successOrFail.get()));
+            eventPublisher.publishEvent(new OrderCanceledEvent(this, successOrFail.get()));
         } else {
             cancelCommand.replyTo.tell(StatusReply.error(
                     new ApplicationException(CommonCause.ORDER_NOT_FOUND,CommonCause.ORDER_NOT_FOUND.getDescription())));

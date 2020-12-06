@@ -5,6 +5,9 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
+import com.vb.market.AppContext;
+import com.vb.market.events.TradeTransactionEvent;
+import com.vb.market.listeners.AppEventPublisher;
 import com.vb.market.utils.IdGen;
 
 import java.time.Instant;
@@ -27,12 +30,15 @@ public class TradeLedgerActor extends AbstractBehavior<TradeLedgerActor.Command>
 
     private Map<Long, Trade> ledger = new LinkedHashMap<>();
 
+    private AppEventPublisher eventPublisher;
+
     public static Behavior<Command> create() {
         return Behaviors.setup(TradeLedgerActor::new);
     }
 
     private TradeLedgerActor(ActorContext<TradeLedgerActor.Command> context) {
         super(context);
+        this.eventPublisher = AppContext.getBean(AppEventPublisher.class);
         idGen = new IdGen();
     }
 
@@ -50,8 +56,8 @@ public class TradeLedgerActor extends AbstractBehavior<TradeLedgerActor.Command>
         trade.setSubmittedTime(Instant.now());
         ledger.put(id, message.trade);
 
-        //TODO:@vlbo - websocket
         getContext().getLog().info(String.format("TRADE transaction complete %s", trade.toString()));
+        eventPublisher.publishEvent(new TradeTransactionEvent(this, trade));
         return this;
     }
 }
