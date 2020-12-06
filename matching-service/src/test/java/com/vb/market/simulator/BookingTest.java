@@ -8,10 +8,10 @@ import akka.pattern.StatusReply;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest.Builder;
 import com.vb.market.domain.Side;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderReply;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderMessage;
-import com.vb.market.engine.booking.BooksActor;
-import com.vb.market.engine.booking.BooksActor.GetBookEntriesMessage;
+import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
+import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
+import com.vb.market.engine.booking.BookingActor;
+import com.vb.market.engine.booking.BookingActor.GetBookEntriesMessage;
 import com.vb.market.engine.booking.OrderBook;
 import com.vb.market.engine.booking.TradeLedgerActor;
 import org.junit.ClassRule;
@@ -35,11 +35,11 @@ public class BookingTest {
 
     @Test
     public void testPriceTimePrioritySortingForBUY() {
-        TestProbe<StatusReply<PlaceOrderReply>> testProbe = testKit.createTestProbe();
-        TestProbe<BooksActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
+        TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
+        TestProbe<BookingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
 
         ActorRef<TradeLedgerActor.Command> ledger = testKit.spawn(TradeLedgerActor.create(), "akka-ledger");
-        ActorRef<BooksActor.Command> booksActor = testKit.spawn(BooksActor.create("TEST", ledger));
+        ActorRef<BookingActor.Command> booksActor = testKit.spawn(BookingActor.create("TEST", ledger));
 
         PlaceOrderRequest placeOrderRequest1 = Builder.anOrderRequest()
                 .withPrice(20)
@@ -72,7 +72,7 @@ public class BookingTest {
         booksActor.tell(new PlaceOrderMessage(placeOrderRequest5, testProbe.getRef()));
 
         booksActor.tell(new GetBookEntriesMessage(5, Side.BUY, testProbeN.getRef()));
-        BooksActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
+        BookingActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
 
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> bookEntries = bookEntriesReply.bookEntries;
 
@@ -89,11 +89,11 @@ public class BookingTest {
 
     @Test
     public void testPriceTimePrioritySortingForSELL() {
-        TestProbe<StatusReply<PlaceOrderReply>> testProbe = testKit.createTestProbe();
-        TestProbe<BooksActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
+        TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
+        TestProbe<BookingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
 
         ActorRef<TradeLedgerActor.Command> ledger = testKit.spawn(TradeLedgerActor.create(), "akka-ledger");
-        ActorRef<BooksActor.Command> booksActor = testKit.spawn(BooksActor.create("TEST", ledger));
+        ActorRef<BookingActor.Command> booksActor = testKit.spawn(BookingActor.create("TEST", ledger));
 
         PlaceOrderRequest placeOrderRequest1 = Builder.anOrderRequest()
                 .withPrice(22)
@@ -131,7 +131,7 @@ public class BookingTest {
         booksActor.tell(new PlaceOrderMessage(placeOrderRequest5, testProbe.getRef()));
 
         booksActor.tell(new GetBookEntriesMessage(5, Side.SELL, testProbeN.getRef()));
-        BooksActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
+        BookingActor.BookEntriesReply bookEntriesReply = testProbeN.receiveMessage();
 
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> bookEntries = bookEntriesReply.bookEntries;
 

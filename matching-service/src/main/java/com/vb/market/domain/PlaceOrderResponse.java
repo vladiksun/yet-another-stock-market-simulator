@@ -1,9 +1,11 @@
 package com.vb.market.domain;
 
+import com.vb.market.controller.Status;
+
 public class PlaceOrderResponse {
 
     private PlaceOrderRequest requestedPlaceOrderRequest;
-    private String message;
+    private Status status;
     private String reason;
 
     public PlaceOrderRequest getRequestedOrder() {
@@ -14,12 +16,12 @@ public class PlaceOrderResponse {
         this.requestedPlaceOrderRequest = requestedPlaceOrderRequest;
     }
 
-    public String getMessage() {
-        return message;
+    public Status getStatus() {
+        return status;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public String getReason() {
@@ -33,7 +35,7 @@ public class PlaceOrderResponse {
 
     public static final class Builder {
         private PlaceOrderRequest placeOrderRequest;
-        private String message;
+        private Status status;
         private String reason;
 
         private Builder() {
@@ -48,8 +50,8 @@ public class PlaceOrderResponse {
             return this;
         }
 
-        public Builder withMessage(String message) {
-            this.message = message;
+        public Builder withStatus(Status status) {
+            this.status = status;
             return this;
         }
 
@@ -59,13 +61,13 @@ public class PlaceOrderResponse {
         }
 
         public Builder but() {
-            return anOrderOperationStatus().withRequestedOrder(placeOrderRequest).withMessage(message).withReason(reason);
+            return anOrderOperationStatus().withRequestedOrder(placeOrderRequest).withStatus(status).withReason(reason);
         }
 
         public PlaceOrderResponse build() {
             PlaceOrderResponse placeOrderResponse = new PlaceOrderResponse();
             placeOrderResponse.setRequestedOrder(placeOrderRequest);
-            placeOrderResponse.setMessage(message);
+            placeOrderResponse.setStatus(status);
             placeOrderResponse.setReason(reason);
             return placeOrderResponse;
         }

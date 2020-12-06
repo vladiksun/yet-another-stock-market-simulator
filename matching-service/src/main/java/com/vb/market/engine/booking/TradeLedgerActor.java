@@ -27,7 +27,7 @@ public class TradeLedgerActor extends AbstractBehavior<TradeLedgerActor.Command>
 
     private Map<Long, Trade> ledger = new LinkedHashMap<>();
 
-    public static Behavior<TradeLedgerActor.Command> create() {
+    public static Behavior<Command> create() {
         return Behaviors.setup(TradeLedgerActor::new);
     }
 

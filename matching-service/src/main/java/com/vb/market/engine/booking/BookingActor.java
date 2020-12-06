@@ -7,26 +7,30 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.pattern.StatusReply;
+import com.vb.market.AppContext;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.Side;
-import com.vb.market.engine.MatchingManagerActor;
-import com.vb.market.engine.MatchingManagerActor.BalanceBooksCommand;
-import com.vb.market.engine.MatchingManagerActor.CancelOrderMessage;
-import com.vb.market.engine.MatchingManagerActor.CancelOrderReply;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderReply;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderMessage;
+import com.vb.market.engine.TradeManagingActor;
+import com.vb.market.engine.TradeManagingActor.BalanceBooksCommand;
+import com.vb.market.engine.TradeManagingActor.CancelOrderMessage;
+import com.vb.market.engine.TradeManagingActor.CancelOrderReply;
+import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
+import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
 import com.vb.market.engine.booking.OrderBook.BookEntry;
 import com.vb.market.engine.booking.OrderBook.KeyPriority;
+import com.vb.market.events.OrderPlacedEvent;
 import com.vb.market.exceptions.ApplicationException;
 import com.vb.market.exceptions.CommonCause;
+import com.vb.market.listeners.AppEventPublisher;
 import com.vb.market.utils.IdGen;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
 
-public class BooksActor extends AbstractBehavior<BooksActor.Command> {
+public class BookingActor extends AbstractBehavior<BookingActor.Command> {
 
     public interface Command {}
 
@@ -60,12 +64,15 @@ public class BooksActor extends AbstractBehavior<BooksActor.Command> {
 
     private ActorRef<TradeLedgerActor.Command> ledgerActor;
 
+    private AppEventPublisher eventPublisher;
+
     public static Behavior<Command> create(String bookId, ActorRef<TradeLedgerActor.Command> ledgerActor) {
-        return Behaviors.setup(context -> new BooksActor(context, bookId, ledgerActor));
+        return Behaviors.setup(context -> new BookingActor(context, bookId, ledgerActor));
     }
 
-    private BooksActor(ActorContext<Command> context, String bookId, ActorRef<TradeLedgerActor.Command> ledgerActor) {
+    private BookingActor(ActorContext<Command> context, String bookId, ActorRef<TradeLedgerActor.Command> ledgerActor) {
         super(context);
+        this.eventPublisher = AppContext.getBean(AppEventPublisher.class);
         this.ledgerActor = ledgerActor;
         this.idGen = new IdGen();
         this.bookId = bookId;
@@ -77,7 +84,7 @@ public class BooksActor extends AbstractBehavior<BooksActor.Command> {
     public Receive<Command> createReceive() {
         return newReceiveBuilder()
                 .onMessage(PlaceOrderMessage.class, this::onPlaceOrder)
-                .onMessage(MatchingManagerActor.CancelOrderMessage.class, this::onCancelOrderCommand)
+                .onMessage(TradeManagingActor.CancelOrderMessage.class, this::onCancelOrderCommand)
                 .onMessage(BalanceBooksCommand.class, this::onBookBalanceCommand)
                 .onMessage(GetBookEntriesMessage.class, this::getBookEntries)
                 .build();
@@ -184,15 +191,17 @@ public class BooksActor extends AbstractBehavior<BooksActor.Command> {
         Instant submissionTime = Instant.now();
         placeOrderRequest.setSubmittedTime(submissionTime);
 
-        PlaceOrderReply placeOrderReply;
+        OrderPlacedReply orderPlacedReply;
 
         if (Side.BUY == placeOrderRequest.getSide()) {
-            placeOrderReply = buyBook.addOrder(placeOrderRequest);
+            orderPlacedReply = buyBook.addOrder(placeOrderRequest);
         } else {
-            placeOrderReply = sellBook.addOrder(placeOrderRequest);
+            orderPlacedReply = sellBook.addOrder(placeOrderRequest);
         }
 
-        placeOrderMessage.replyTo.tell(StatusReply.success(placeOrderReply));
+        placeOrderMessage.replyTo.tell(StatusReply.success(orderPlacedReply));
+
+        eventPublisher.publishEvent(new OrderPlacedEvent(this, orderPlacedReply));
         getContext().getLog().info("Order placed: {}", placeOrderRequest.toString());
         return this;
     }

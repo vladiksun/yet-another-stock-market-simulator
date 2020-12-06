@@ -8,10 +8,10 @@ import akka.pattern.StatusReply;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest.Builder;
 import com.vb.market.domain.Side;
-import com.vb.market.engine.MatchingManagerActor.BalanceBooksCommand;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderReply;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderMessage;
-import com.vb.market.engine.booking.BooksActor;
+import com.vb.market.engine.TradeManagingActor.BalanceBooksCommand;
+import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
+import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
+import com.vb.market.engine.booking.BookingActor;
 import com.vb.market.engine.booking.OrderBook;
 import com.vb.market.engine.booking.TradeLedgerActor;
 import org.junit.ClassRule;
@@ -52,21 +52,21 @@ public class BalancingTest {
     @Test
     public void balanceShouldRemainTheSameWhileWaitingTheHighestBid() {
         ActorRef<TradeLedgerActor.Command> ledger = testKit.spawn(TradeLedgerActor.create(), "akka-ledger");
-        ActorRef<BooksActor.Command> booksActor = testKit.spawn(BooksActor.create("TEST", ledger));
+        ActorRef<BookingActor.Command> booksActor = testKit.spawn(BookingActor.create("TEST", ledger));
 
-        TestProbe<BooksActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
+        TestProbe<BookingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
 
         placeBUYOrdersScenario1(booksActor);
         placeSELLOrdersScenario1(booksActor);
 
         booksActor.tell(BalanceBooksCommand.INSTANCE);
 
-        booksActor.tell(new BooksActor.GetBookEntriesMessage(3, Side.BUY, testProbeN.getRef()));
-        BooksActor.BookEntriesReply buyReply = testProbeN.receiveMessage();
+        booksActor.tell(new BookingActor.GetBookEntriesMessage(3, Side.BUY, testProbeN.getRef()));
+        BookingActor.BookEntriesReply buyReply = testProbeN.receiveMessage();
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> buyBookEntries = buyReply.bookEntries;
 
-        booksActor.tell(new BooksActor.GetBookEntriesMessage(3, Side.SELL, testProbeN.getRef()));
-        BooksActor.BookEntriesReply sellReply = testProbeN.receiveMessage();
+        booksActor.tell(new BookingActor.GetBookEntriesMessage(3, Side.SELL, testProbeN.getRef()));
+        BookingActor.BookEntriesReply sellReply = testProbeN.receiveMessage();
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> selBookEntries = sellReply.bookEntries;
 
         List<Long> actualBuyBookEntries = buyBookEntries.keySet()
@@ -120,10 +120,10 @@ public class BalancingTest {
     @Test
     public void shouldBalanceTheOrdersWhenNewBuyOrderComesIn() {
         ActorRef<TradeLedgerActor.Command> ledger = testKit.spawn(TradeLedgerActor.create(), "akka-ledger");
-        ActorRef<BooksActor.Command> booksActor = testKit.spawn(BooksActor.create("TEST", ledger));
+        ActorRef<BookingActor.Command> booksActor = testKit.spawn(BookingActor.create("TEST", ledger));
 
-        TestProbe<BooksActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
-        TestProbe<StatusReply<PlaceOrderReply>> testProbe = testKit.createTestProbe();
+        TestProbe<BookingActor.BookEntriesReply> testProbeN = testKit.createTestProbe();
+        TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
 
         placeBUYOrdersScenario1(booksActor);
         placeSELLOrdersScenario1(booksActor);
@@ -140,12 +140,12 @@ public class BalancingTest {
 
         booksActor.tell(BalanceBooksCommand.INSTANCE);
 
-        booksActor.tell(new BooksActor.GetBookEntriesMessage(3, Side.BUY, testProbeN.getRef()));
-        BooksActor.BookEntriesReply buyReply = testProbeN.receiveMessage();
+        booksActor.tell(new BookingActor.GetBookEntriesMessage(3, Side.BUY, testProbeN.getRef()));
+        BookingActor.BookEntriesReply buyReply = testProbeN.receiveMessage();
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> buyBookEntries = buyReply.bookEntries;
 
-        booksActor.tell(new BooksActor.GetBookEntriesMessage(3, Side.SELL, testProbeN.getRef()));
-        BooksActor.BookEntriesReply sellReply = testProbeN.receiveMessage();
+        booksActor.tell(new BookingActor.GetBookEntriesMessage(3, Side.SELL, testProbeN.getRef()));
+        BookingActor.BookEntriesReply sellReply = testProbeN.receiveMessage();
         Map<OrderBook.KeyPriority, OrderBook.BookEntry> selBookEntries = sellReply.bookEntries;
 
         List<Long> actualBuyBookEntries = buyBookEntries.keySet()
@@ -165,8 +165,8 @@ public class BalancingTest {
         assertEquals(expectedSellOrders, actualSellBookEntries);
     }
 
-    private void placeBUYOrdersScenario1(ActorRef<BooksActor.Command> booksActor) {
-        TestProbe<StatusReply<PlaceOrderReply>> testProbe = testKit.createTestProbe();
+    private void placeBUYOrdersScenario1(ActorRef<BookingActor.Command> booksActor) {
+        TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
 
         PlaceOrderRequest buyPlaceOrderRequest1 = Builder.anOrderRequest()
                 .withEventId(1L)
@@ -194,8 +194,8 @@ public class BalancingTest {
         booksActor.tell(new PlaceOrderMessage(buyPlaceOrderRequest3, testProbe.getRef()));
     }
 
-    private void placeSELLOrdersScenario1(ActorRef<BooksActor.Command> booksActor) {
-        TestProbe<StatusReply<PlaceOrderReply>> testProbe = testKit.createTestProbe();
+    private void placeSELLOrdersScenario1(ActorRef<BookingActor.Command> booksActor) {
+        TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
 
         PlaceOrderRequest sellPlaceOrderRequest1 = Builder.anOrderRequest()
                 .withEventId(4L)

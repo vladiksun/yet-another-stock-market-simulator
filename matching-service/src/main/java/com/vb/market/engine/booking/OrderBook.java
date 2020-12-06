@@ -3,8 +3,8 @@ package com.vb.market.engine.booking;
 import com.vb.market.domain.CancelOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.Side;
-import com.vb.market.engine.MatchingManagerActor.CancelOrderReply;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderReply;
+import com.vb.market.engine.TradeManagingActor.CancelOrderReply;
+import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
 
 import java.time.Instant;
 import java.util.*;
@@ -79,12 +79,12 @@ public class OrderBook {
         this.limitBook = new TreeMap<>(comparator);
     }
 
-    public PlaceOrderReply addOrder(PlaceOrderRequest request) {
+    public OrderPlacedReply addOrder(PlaceOrderRequest request) {
         KeyPriority keyPriority = new KeyPriority(request.getEventId(), request.getPrice(), request.getSubmittedTime());
         BookEntry bookEntry = new BookEntry(keyPriority, side, request.getQuantity());
         limitBook.put(keyPriority, bookEntry);
 
-        return new PlaceOrderReply(request);
+        return new OrderPlacedReply(request);
     }
 
     public Optional<CancelOrderReply> cancelOrder(CancelOrderRequest cancelOrderRequest) {

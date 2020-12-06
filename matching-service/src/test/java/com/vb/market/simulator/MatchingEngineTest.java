@@ -8,9 +8,9 @@ import akka.pattern.StatusReply;
 import com.vb.market.domain.PlaceOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest.Builder;
 import com.vb.market.domain.Side;
-import com.vb.market.engine.MatchingManagerActor;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderReply;
-import com.vb.market.engine.MatchingManagerActor.PlaceOrderMessage;
+import com.vb.market.engine.TradeManagingActor;
+import com.vb.market.engine.TradeManagingActor.OrderPlacedReply;
+import com.vb.market.engine.TradeManagingActor.PlaceOrderMessage;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,9 +28,9 @@ public class MatchingEngineTest {
 
     @Test
     public void testBUYOrderMustBePlaced() {
-        TestProbe<StatusReply<PlaceOrderReply>> testProbe = testKit.createTestProbe();
+        TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
 
-        ActorRef<MatchingManagerActor.Command> matchingManager = testKit.spawn(MatchingManagerActor.create());
+        ActorRef<TradeManagingActor.Command> matchingManager = testKit.spawn(TradeManagingActor.create());
 
         PlaceOrderRequest placeOrderRequest = PlaceOrderRequest.Builder.anOrderRequest()
                 .withClientId("Vlad")
@@ -42,7 +42,7 @@ public class MatchingEngineTest {
 
         matchingManager.tell(new PlaceOrderMessage(placeOrderRequest, testProbe.getRef()));
 
-        StatusReply<PlaceOrderReply> orderPlacedStatusReply = testProbe.receiveMessage();
+        StatusReply<OrderPlacedReply> orderPlacedStatusReply = testProbe.receiveMessage();
 
         assertEquals(new Integer(20), orderPlacedStatusReply.getValue().placeOrderRequest.getPrice());
         assertNotNull(orderPlacedStatusReply.getValue().placeOrderRequest.getSubmittedTime());
@@ -50,9 +50,9 @@ public class MatchingEngineTest {
 
     @Test
     public void testSELLOrderMustBePlaced() {
-        TestProbe<StatusReply<PlaceOrderReply>> testProbe = testKit.createTestProbe();
+        TestProbe<StatusReply<OrderPlacedReply>> testProbe = testKit.createTestProbe();
 
-        ActorRef<MatchingManagerActor.Command> matchingManager = testKit.spawn(MatchingManagerActor.create());
+        ActorRef<TradeManagingActor.Command> matchingManager = testKit.spawn(TradeManagingActor.create());
 
         PlaceOrderRequest placeOrderRequest = Builder.anOrderRequest()
                 .withEventId(1L)
@@ -65,7 +65,7 @@ public class MatchingEngineTest {
 
         matchingManager.tell(new PlaceOrderMessage(placeOrderRequest, testProbe.getRef()));
 
-        StatusReply<PlaceOrderReply> orderPlacedStatusReply = testProbe.receiveMessage();
+        StatusReply<OrderPlacedReply> orderPlacedStatusReply = testProbe.receiveMessage();
 
         assertEquals(new Integer(20), orderPlacedStatusReply.getValue().placeOrderRequest.getPrice());
         assertNotNull(orderPlacedStatusReply.getValue().placeOrderRequest.getSubmittedTime());

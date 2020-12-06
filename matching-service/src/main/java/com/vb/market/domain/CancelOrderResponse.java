@@ -1,9 +1,11 @@
 package com.vb.market.domain;
 
+import com.vb.market.controller.Status;
+
 public class CancelOrderResponse {
 
     private CancelOrderRequest cancelOrderRequest;
-    private String message;
+    private Status status;
     private String reason;
 
     public CancelOrderRequest getCancelOrderRequest() {
@@ -14,12 +16,12 @@ public class CancelOrderResponse {
         this.cancelOrderRequest = cancelOrderRequest;
     }
 
-    public String getMessage() {
-        return message;
+    public Status getStatus() {
+        return status;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public String getReason() {
@@ -33,7 +35,7 @@ public class CancelOrderResponse {
 
     public static final class Builder {
         private CancelOrderRequest cancelOrderRequest;
-        private String message;
+        private Status status;
         private String reason;
 
         private Builder() {
@@ -48,8 +50,8 @@ public class CancelOrderResponse {
             return this;
         }
 
-        public Builder withMessage(String message) {
-            this.message = message;
+        public Builder withMessage(Status status) {
+            this.status = status;
             return this;
         }
 
@@ -59,13 +61,13 @@ public class CancelOrderResponse {
         }
 
         public Builder but() {
-            return aCancelOrderResponse().withCancelOrderRequest(cancelOrderRequest).withMessage(message).withReason(reason);
+            return aCancelOrderResponse().withCancelOrderRequest(cancelOrderRequest).withMessage(status).withReason(reason);
         }
 
         public CancelOrderResponse build() {
             CancelOrderResponse cancelOrderResponse = new CancelOrderResponse();
             cancelOrderResponse.setCancelOrderRequest(cancelOrderRequest);
-            cancelOrderResponse.setMessage(message);
+            cancelOrderResponse.setStatus(status);
             cancelOrderResponse.setReason(reason);
             return cancelOrderResponse;
         }

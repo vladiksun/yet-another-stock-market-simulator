@@ -7,8 +7,8 @@ import akka.actor.typed.javadsl.*;
 import akka.pattern.StatusReply;
 import com.vb.market.domain.CancelOrderRequest;
 import com.vb.market.domain.PlaceOrderRequest;
-import com.vb.market.engine.MatchingManagerActor.Command;
-import com.vb.market.engine.booking.BooksActor;
+import com.vb.market.engine.TradeManagingActor.Command;
+import com.vb.market.engine.booking.BookingActor;
 import com.vb.market.engine.booking.TradeLedgerActor;
 import com.vb.market.exceptions.ApplicationException;
 import com.vb.market.exceptions.CommonCause;
@@ -17,30 +17,30 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MatchingManagerActor extends AbstractBehavior<Command> {
+public class TradeManagingActor extends AbstractBehavior<Command> {
 
     public interface Command {}
 
     // protocol start
-    public static final class PlaceOrderMessage implements Command, BooksActor.Command {
+    public static final class PlaceOrderMessage implements Command, BookingActor.Command {
         public final PlaceOrderRequest placeOrderRequest;
-        public final ActorRef<StatusReply<PlaceOrderReply>> replyTo;
+        public final ActorRef<StatusReply<OrderPlacedReply>> replyTo;
 
-        public PlaceOrderMessage(PlaceOrderRequest placeOrderRequest, ActorRef<StatusReply<PlaceOrderReply>> replyTo) {
+        public PlaceOrderMessage(PlaceOrderRequest placeOrderRequest, ActorRef<StatusReply<OrderPlacedReply>> replyTo) {
             this.placeOrderRequest = placeOrderRequest;
             this.replyTo = replyTo;
         }
     }
 
-    public static final class PlaceOrderReply {
+    public static final class OrderPlacedReply {
         public final PlaceOrderRequest placeOrderRequest;
 
-        public PlaceOrderReply(PlaceOrderRequest placeOrderRequest) {
+        public OrderPlacedReply(PlaceOrderRequest placeOrderRequest) {
             this.placeOrderRequest = placeOrderRequest;
         }
     }
 
-    public static final class CancelOrderMessage implements Command, BooksActor.Command {
+    public static final class CancelOrderMessage implements Command, BookingActor.Command {
         public final CancelOrderRequest cancelOrderRequest;
         public final ActorRef<StatusReply<CancelOrderReply>> replyTo;
 
@@ -66,22 +66,22 @@ public class MatchingManagerActor extends AbstractBehavior<Command> {
         }
     }
 
-    public enum BalanceBooksCommand implements Command, BooksActor.Command {
+    public enum BalanceBooksCommand implements Command, BookingActor.Command {
         INSTANCE
     }
     // protocol end
 
 
-    private final Map<String, ActorRef<BooksActor.Command>> bookIdToActor = new HashMap<>();
+    private final Map<String, ActorRef<BookingActor.Command>> bookIdToActor = new HashMap<>();
 
     private ActorRef<TradeLedgerActor.Command> ledgerActor;
 
     public static Behavior<Command> create() {
         return Behaviors.setup(context ->
-                    Behaviors.withTimers(timers -> new MatchingManagerActor(context, timers)));
+                    Behaviors.withTimers(timers -> new TradeManagingActor(context, timers)));
     }
 
-    private MatchingManagerActor(ActorContext<Command> context, TimerScheduler<Command> timers) {
+    private TradeManagingActor(ActorContext<Command> context, TimerScheduler<Command> timers) {
         super(context);
 
         this.ledgerActor = getContext().spawn(TradeLedgerActor.create(), "akka-ledger");
@@ -89,18 +89,18 @@ public class MatchingManagerActor extends AbstractBehavior<Command> {
         timers.startTimerWithFixedDelay(BalanceBooksCommand.INSTANCE, Duration.ofMinutes(1));
 //        timers.startTimerWithFixedDelay(BalanceBooksCommand.INSTANCE, Duration.ofSeconds(5));
 
-        context.getLog().info("MatchingManager started");
+        context.getLog().info("TradeManagingActor started");
     }
 
     private Behavior<Command> onPlaceOrderMessage(PlaceOrderMessage placeOrderMessage) {
         String bookId = placeOrderMessage.placeOrderRequest.getSymbol();
-        ActorRef<BooksActor.Command> bookActorRef = bookIdToActor.get(bookId);
+        ActorRef<BookingActor.Command> bookActorRef = bookIdToActor.get(bookId);
 
         if (bookActorRef != null) {
             bookActorRef.tell(placeOrderMessage);
         } else {
             getContext().getLog().info("Creating booking actor for symbol {}", bookId);
-            bookActorRef = getContext().spawn(BooksActor.create(bookId, ledgerActor), "akka-book-" + bookId);
+            bookActorRef = getContext().spawn(BookingActor.create(bookId, ledgerActor), "akka-book-" + bookId);
             getContext().watchWith(bookActorRef, new BooksActorTerminatedMessage(bookId));
 
             bookIdToActor.put(bookId, bookActorRef);
@@ -111,7 +111,7 @@ public class MatchingManagerActor extends AbstractBehavior<Command> {
 
     private Behavior<Command> onCancelOrderCommand(CancelOrderMessage cancelCommand) {
         String bookId = cancelCommand.cancelOrderRequest.getSymbol();
-        ActorRef<BooksActor.Command> bookActor = bookIdToActor.get(bookId);
+        ActorRef<BookingActor.Command> bookActor = bookIdToActor.get(bookId);
 
         if (bookActor != null) {
             bookActor.tell(cancelCommand);
@@ -123,7 +123,7 @@ public class MatchingManagerActor extends AbstractBehavior<Command> {
         return this;
     }
 
-    private MatchingManagerActor onBalanceBooksCommand(BalanceBooksCommand balanceBooksCommand) {
+    private TradeManagingActor onBalanceBooksCommand(BalanceBooksCommand balanceBooksCommand) {
         getContext().getLog().info("Time to balance books....");
 
         bookIdToActor.forEach((bookId, bookActorRef) -> {
@@ -133,7 +133,7 @@ public class MatchingManagerActor extends AbstractBehavior<Command> {
         return this;
     }
 
-    private MatchingManagerActor onBooksActorTerminated(BooksActorTerminatedMessage message) {
+    private TradeManagingActor onBooksActorTerminated(BooksActorTerminatedMessage message) {
         getContext().getLog().info("Booking actor for symbol {} terminated", message.bookId);
         return this;
     }
@@ -149,7 +149,7 @@ public class MatchingManagerActor extends AbstractBehavior<Command> {
                 .build();
     }
 
-    private MatchingManagerActor onPostStop() {
+    private TradeManagingActor onPostStop() {
         getContext().getLog().info("MatchingManager actor stopped");
         return this;
     }
