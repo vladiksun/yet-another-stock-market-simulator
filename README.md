@@ -52,7 +52,7 @@ Application supports two basic operations.<br/>
 | POST | /cancelorder | Cancel the order
 
 #### Place order request example
-http://localhost:8080/customer
+http://localhost:8080/placeorder
 ```json
 {
   "clientId": "Tom",
@@ -64,7 +64,7 @@ http://localhost:8080/customer
 ```
 
 #### Cancel order request example
-http://localhost:8080/customer
+http://localhost:8080/cancelorder
 ```json
 {
   "clientId": "1111",
