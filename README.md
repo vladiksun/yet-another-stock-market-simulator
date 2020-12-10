@@ -52,7 +52,7 @@ Application supports two basic operations.<br/>
 | POST | /cancelorder | Cancel the order
 
 #### Place order request example
-http://localhost:8080/customer
+http://localhost:8080/placeorder
 ```json
 {
   "clientId": "Tom",
@@ -64,7 +64,7 @@ http://localhost:8080/customer
 ```
 
 #### Cancel order request example
-http://localhost:8080/customer
+http://localhost:8080/cancelorder
 ```json
 {
   "clientId": "1111",
@@ -87,7 +87,7 @@ Base URL: **http://localhost:8080/market-websocket** <br/>
 Application replies to the provided Subscription URL based on user's session ID.
 
 Example using Apic Google Chrome extension:<br/>
-#####Place order<br/>
+##### Place order<br/>
 ![system aktor design](./docs/webSocketPlaceOrderExample.jpg)
 <br/>
 <br/>
