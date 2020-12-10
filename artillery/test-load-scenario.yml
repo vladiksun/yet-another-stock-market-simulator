@@ -28,7 +28,7 @@ config:
       Accept: "application/json"
 scenarios:
   # We define one scenario:
-  - name: "Search and buy"
+  - name: "Place order"
     flow:
       - post:
           url: "/placeorder"
