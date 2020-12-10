@@ -1,11 +1,13 @@
 config:
   target: "http://localhost:8080/market"
   phases:
+      # Create 5 virtual users every second for 5 minutes = 60*5*5=1500 users by the end of the phase
     - duration: 300
       arrivalRate: 5
       name: Warm up
+      # Ramp up arrival rate from 10 to 50 over 2 minutes, followed by 10 minutes at 50 arrivals per second.
     - duration: 120
-      arrivalRate: 5
+      arrivalRate: 10
       rampTo: 50
       name: Ramp up load
     - duration: 600
