@@ -30,7 +30,7 @@ The **BookKeeperActor** contains the state of BUY and SELL books.<br/>
 It also encapsulates the logic of books balancing ( crossing ).<br/>
 During the balancing **BookKeeperActor** can send a message to the **TradeLedgerActor** if the Trade happens.<br/>
 **TradeLedgerActor** is created by **TradeManagerActor** on application startup and manages the state of all transactions.<br/>
-**TradeManagerActor** initiates the books balancing every minute by sending out a special message to all **BookKeeperActor**<br/>
+**TradeManagerActor** initiates the books balancing every minute by sending out a special message to all **BookKeeperActor's**. <br/>
 **BookKeeperActor** itself is responsible to manage the balance in order.
 
 ### How to run
